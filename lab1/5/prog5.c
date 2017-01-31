@@ -1,5 +1,6 @@
+#include <fcntl.h>
 #include <stdio.h>
-#include <stdlib.h>
+#include <unistd.h>
 
 int main() {
 
@@ -29,13 +30,17 @@ int main() {
 	printf("%d\n", nums[x-1]);
 
 	/* Write the values to a file */
-	FILE *fp;
 	char *fname = "userNumbers.txt";
-	fp = fopen(fname, "w+");
-	for (i = 0; i < x; i++) {
-		fprintf(fp, "%d\n", nums[i]);
+	int filedesc = open(fname, O_RDWR | O_CREAT | O_TRUNC);
+	if (filedesc < 0) {
+		printf("Error opening file %s...\n", fname);
+		return 1;
 	}
-	fclose(fp);
+	for (i = 0; i < x; i++) {
+		char ichar = nums[i]+'0';
+		write(filedesc, &ichar, sizeof(ichar));
+	}
+	close(filedesc);
 	
 	return(0);
 }
