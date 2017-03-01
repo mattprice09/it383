@@ -3,6 +3,10 @@
 #include <unistd.h>
 #include <sys/wait.h>
 
+/**
+* This code was copied and pasted from our textbook.
+**/
+
 int main()
 {
 pid_t pid;
