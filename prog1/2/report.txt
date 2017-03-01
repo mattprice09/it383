@@ -1,0 +1,3 @@
+	The API call `shm_open()` is a function that creates and opens a new POSIX shared memory object, which is an object that can be used by unrelated processes. `ftruncate()` is used to set the size of the memory object.
+	To write to shared memory objects, one should call `mmap()`. This function returns a pointer to the shared memory object that can be used in "write" calls.
+	Finally, `shm_unlink()` is used to remove the name of the existing open shared memory object. If there are no more open links to the shared memory object, then that object will be deleted. If there are, however, then the deletion will be postponed until all links are terminated.
