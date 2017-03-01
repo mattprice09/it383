@@ -1,0 +1,7 @@
+Line A: 0
+Line B: 5671
+Line C: 5671
+Line D: 5670
+
+The C api call `getpid()` simply returns the process ID of the calling process. 
+The library function `fprintf()` is similar to `printf()` except it allows the programmer to format the output.
