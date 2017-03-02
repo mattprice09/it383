@@ -280,9 +280,9 @@ int main() {
       free(cmds);
     }
     free(inp);
-    if (controller >= 10) {
-      return 1;
-    }
+    // if (controller >= 10) {
+    //   return 1;
+    // }
   }
   free(history);
 }
