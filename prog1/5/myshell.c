@@ -1,4 +1,5 @@
 #include <ctype.h>
+#include <fcntl.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -9,6 +10,7 @@
 struct Command {
   char** tokens;
   bool bg;
+  char* outputFile;
 };
 
 // Check if user entered a blank command
@@ -33,6 +35,8 @@ struct Command parseCommand(char* input) {
   // can appear in arguments bounded by quotations
   int start = -1;
   bool quotesToken = false;
+  bool outputRedir = false;
+  char* outputFile = NULL;
   int i;
   for (i = 0; i < strlen(input); i++) {
     // end of line
@@ -45,7 +49,12 @@ struct Command parseCommand(char* input) {
       if (input[i] != ' ') {
         start = i;
         if (input[i] == '"') {
+          // start of items within quotation
           quotesToken = true;
+        } else if (input[i] == '>') {
+          // handle redirection of output
+          outputRedir = true;
+          start = -1;
         }
       }
     } else if (input[i] == '"' && quotesToken) {
@@ -53,31 +62,48 @@ struct Command parseCommand(char* input) {
       quotesToken = false;
     } else if ((input[i] == ' ' && !quotesToken)) {
       // end of token
-      char* token = malloc((i-start) * sizeof(char));
-      strncpy(token, input+start, (i-start) * sizeof(char));
-      // resize tokens array 
-      tokens = (char**) realloc(tokens, (size+1) * sizeof(char*));
-      tokens[size] = token;
-      size++;
+      if (outputRedir) {
+        // output file
+        outputFile = malloc((i-start) * sizeof(char));
+        strncpy(outputFile, input+start, (i-start) * sizeof(char));
+        outputRedir = false;
+      } else {
+        // regular token
+        char* token = malloc((i-start) * sizeof(char));
+        strncpy(token, input+start, (i-start) * sizeof(char));
+        // resize tokens array
+        tokens = (char**) realloc(tokens, (size+1) * sizeof(char*));
+        tokens[size] = token;
+        size++;
+      }
       start = -1;
     }
   }
   // add last token
-  char* token = malloc((i-start) * sizeof(char));
-  strncpy(token, input+start, (i-start) * sizeof(char));
-  if (*token == '&') {
-    bg = true;
-  } else if (start != -1) {
-    // resize tokens array 
-    tokens = (char**) realloc(tokens, (size+1) * sizeof(char*));
-    tokens[size] = token;
-    size++;
+  if (outputRedir) {
+    outputFile = malloc((i-start) * sizeof(char));
+    strncpy(outputFile, input+start, (i-start) * sizeof(char));
+  } else {
+    char* token = malloc((i-start) * sizeof(char));
+    strncpy(token, input+start, (i-start) * sizeof(char));
+    if (*token == '&') {
+      bg = true;
+    } else if (start != -1) {
+      // resize tokens array 
+      tokens = (char**) realloc(tokens, (size+1) * sizeof(char*));
+      tokens[size] = token;
+      size++;
+    }
   }
   // add null token at end
   tokens = (char**) realloc(tokens, (size+1) * sizeof(char*));
   tokens[size] = (char*)NULL;
+  // make sure output file string is initialized
+  if (outputFile == NULL) {
+    outputFile = "";
+  }
 
-  struct Command cmd = { tokens, bg };
+  struct Command cmd = { tokens, bg, outputFile };
   return cmd;
 }
 
@@ -93,6 +119,7 @@ struct Command* getAllCommands(char* input, int numCommands) {
   return cmds;
 }
 
+// Spawn a child process and run command
 int spawnSubCommand(int in, int out, struct Command* cmd) {
   pid_t pid;
   pid = fork();
@@ -113,7 +140,9 @@ int spawnSubCommand(int in, int out, struct Command* cmd) {
   return pid;
 }
 
-int pipeCommands(struct Command* cmds, int numCommands) {
+// Run 1 or more commands. If more than 1 command, pipe output
+// between them.
+int runCommandChain(struct Command* cmds, int numCommands) {
   
   pid_t pid;
   int fd[2];
@@ -141,6 +170,13 @@ int pipeCommands(struct Command* cmds, int numCommands) {
       close(in);
     }
     close(fd[1]);
+
+    // redirect output if specified
+    if (strcmp(cmds[i].outputFile, "") != 0) {
+      close(1);
+      int outfd = open(cmds[i].outputFile, O_WRONLY|O_CREAT|O_TRUNC, 0666);
+      dup(outfd);
+    }
     execvp(cmds[i].tokens[0], cmds[i].tokens);
     return 1;
 
@@ -234,7 +270,7 @@ int main() {
       // get all commands
       struct Command* cmds = getAllCommands(inp, numPipes+1);
       // run command(s)
-      int cmdStatus = pipeCommands(cmds, numPipes+1);
+      int cmdStatus = runCommandChain(cmds, numPipes+1);
       if (cmdStatus == 1) {
         return 1;
       }
@@ -244,9 +280,9 @@ int main() {
       free(cmds);
     }
     free(inp);
-    // if (controller >= 10) {
-    //   return 1;
-    // }
+    if (controller >= 10) {
+      return 1;
+    }
   }
   free(history);
 }
