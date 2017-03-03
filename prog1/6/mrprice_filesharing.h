@@ -16,5 +16,5 @@ const char* SH_FILE = "mrprice_filesharing";
 struct filesharing_struct {
   bool flag;
   int size;
-  char content[SIZE];
+  char* content;
 };

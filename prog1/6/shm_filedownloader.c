@@ -19,20 +19,18 @@ void downloadFile(struct filesharing_struct* download) {
 
 void* openSharedFileForReading() {
   int shm_fd;
-  printf("pre open");
   shm_fd = shm_open(SH_FILE, O_RDONLY, 0666);
-  printf("opened shm");
   return mmap(0, SIZE, PROT_READ, MAP_SHARED, shm_fd, 0);
 }
 
 int main() {
-  printf("before");
   struct filesharing_struct* download = openSharedFileForReading();
   // // struct filesharing_struct* download = (struct filesharing_struct*) ptr;
   while (1) {
     if (download->flag) {
       // char* dlContent = malloc(sizeof(char) * download->size);
-      printf("%s", download->content);
+      // printf("%s", download->content);
+      printf("File size: %d bytes\n", download->size);
       break;
     }
   }
@@ -44,6 +42,6 @@ int main() {
   //   // download not available
   //   printf("There is no download available.");
   // }
-  // shm_unlink(SH_FILE);
+  shm_unlink(SH_FILE);
 
 }

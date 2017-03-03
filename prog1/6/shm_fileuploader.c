@@ -22,17 +22,14 @@ struct filesharing_struct readFileData(char* filename) {
   long fsize = ftell(file);
   fseek(file, 0, SEEK_SET);
   // read file data
-  // char *fdata = malloc(fsize + 1);
-  // fread(upload.content, fsize, 1, file);
-  char fdata[SIZE];
+  char *fdata = malloc(fsize + 1);
   fread(fdata, fsize, 1, file);
   fclose(file);
-  printf("%s", fdata);
   struct filesharing_struct upload;
   upload.flag = false;
   upload.size = (int)fsize;
-  // strcpy(upload.content, fdata);
-  memcpy(upload.content, fdata, sizeof(fdata));
+  upload.content = strdup(fdata);
+
   // create struct
   return upload;
 }
@@ -53,14 +50,10 @@ int main() {
 
   // create shared memory object after getting user file name
   // struct filesharing_struct* upload = (struct filesharing_struct*) ptr;
-  // upload->flag = false;
-  // upload->size = data.size;
-  // strcpy(upload->content, data.content);
-  // upload->content = malloc(sizeof(char) * strlen(data.content));
-  memcpy(upload, &data, sizeof(struct filesharing_struct)+sizeof(data.content));
-  // memcpy(upload->content, &data.content, data.size);
-  // upload->flag = true;
-  // free(data.content);
-  // free(upload->content);
+  upload->flag = false;
+  upload->size = data.size;
+  upload->content = strdup(data.content);
+  upload->flag = true;
+  free(data.content);
   free(filename);
 }
