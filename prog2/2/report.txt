@@ -1,0 +1,13 @@
+In this part of the programming assignment, we were instructed to copy code from "Advanced Linux Programming" and discuss each program. I will address programs in order below:
+
+Listing 4.1 (thread-create.c):
+	This program is a basic example of creating/running a non-blocking thread. There is an infinite loop in the thread created that prints 'x', and an infinite loop in the main thread that prints 'o'.
+	What I learned from this example was to always examine the copied code before running it, even if it's a basic threading example from the textbook. I didn't realize that these were simply infinite loops meant to demonstrate asynchronous programming, so when I ran it on my personal laptop, it nearly froze up my laptop and forced me to restart. It was at this point that I decided that it would be a good idea to not only examine the code that I run before running it, but also to run it on the University's Linux servers even when I'm in the development portion of the assignment(s).
+	As for answering why the infinite loops ran in parallel, this is because there are 2 parallel threads allowed per core on my Intel processor which allows for parallelization rather than concurrency. Additionally, the parent thread did not call pthread_join(). Thus, the parent process did not block at all while the child thread was running.
+
+Listing 4.2 (thread-create2):
+	This program is meant to display a couple threading concepts. First, it shows a useful way to pass multiple items of data into a thread using a struct. Second, and more importantly in my opinion, is that this program shows how problems can arise if the programmer doesn't handle threads correctly. In this code, the main process creates two threads that print to console N times, however the parent process doesn't wait for the threads to finish at all. Thus, the main process finishes and exits. Thus, the memory for the thread args is deallocated and we have a problem.
+	If the goal was to allow the two threads to finish their jobs, then pthread_join() should have been called after the second thread began running. Another possibility would have been to use some sort of shared memory and implement a way for the final thread to remove the shared memory when finished running.
+
+Listing 4.3 (Revised main function for thread-create2.c):
+
