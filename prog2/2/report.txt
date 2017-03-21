@@ -13,5 +13,9 @@ Listing 4.3 (Revised main function for thread-create2.c):
 	This part essentially fixes the problem proposed by Listing 4.2. Instead of the parent process exiting immediately, the parent process waits for the two worker threads to finish by calling pthread_join(). Thus, the program runs as expected.
 
 Listing 4.4 (primes.c):
+	This program shows how to return values from threads and how to access the return values in the parent thread. There is a compilation warning when casting the int to a void pointer, however the program still compiles. The output is "The 0th prime number is 48611".
+	Essentially, the program makes an example of returning thread values by returning void pointers that are type-casted into a local variable within the main thread. This is done by passing in a variable in the second argument of pthread_join().
+
+Listing 4.5 (detached.c):
 
 

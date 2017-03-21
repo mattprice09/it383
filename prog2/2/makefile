@@ -12,5 +12,5 @@ thread-create2-revised: thread-create2-revised.c
 	${cc} -pthread -o thread-create2-revised thread-create2-revised.c
 
 primes: primes.c
-	${cc} -Wno-int-to-void-pointer-cast -pthread -o primes primes.c
+	${cc} -pthread -o primes primes.c
 

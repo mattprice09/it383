@@ -19,7 +19,7 @@ void* compute_prime (void* arg)
 		if (is_prime) {
 			if (--n == 0)
 			/* Return the desired prime number as the thread return value. */
-				return (void*) candidate;
+				return (void*)candidate;
 		}
 		++candidate;
 	}
