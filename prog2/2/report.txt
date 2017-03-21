@@ -10,4 +10,8 @@ Listing 4.2 (thread-create2):
 	If the goal was to allow the two threads to finish their jobs, then pthread_join() should have been called after the second thread began running. Another possibility would have been to use some sort of shared memory and implement a way for the final thread to remove the shared memory when finished running.
 
 Listing 4.3 (Revised main function for thread-create2.c):
+	This part essentially fixes the problem proposed by Listing 4.2. Instead of the parent process exiting immediately, the parent process waits for the two worker threads to finish by calling pthread_join(). Thus, the program runs as expected.
+
+Listing 4.4 (primes.c):
+
 
