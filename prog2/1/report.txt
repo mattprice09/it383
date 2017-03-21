@@ -1,0 +1,10 @@
+There are numerous components and states of a thread that must be handled by a C programmer using Pthreads. Here, I will discuss each of them separately:
+
+	pthread_attr_init() ->
+		This function is used to initialize a thread attributes object. These attributes include local variables, process information, etc. 
+	pthread_create() ->
+		This creates and runs a thread. There are four parameters to be specified in the function call. First, you must include the pthread_t (thread ID variable). This variable will then have its value changed to the value of the new thread's ID. Second, you must specify the pthread_attr_t (thread attributes) object in order for the new thread to acquire the specified attributes. The third parameter is the void function for the thread to run, and the fourth parameter contains the arguments for the thread's function.
+	pthread_join() ->
+		This function blocks the calling process/thread until the given thread finishes. It requires a pthread_t (thread ID) to be passed in as a parameter. You can set a non-null variable as the second parameter of the function if you want to copy the return value of the thread into the given argument's value. 
+	pthread_exit() ->
+		This function is to be called within thread functions. It exits the thread. 
