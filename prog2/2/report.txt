@@ -17,5 +17,4 @@ Listing 4.4 (primes.c):
 	Essentially, the program makes an example of returning thread values by returning void pointers that are type-casted into a local variable within the main thread. This is done by passing in a variable in the second argument of pthread_join().
 
 Listing 4.5 (detached.c):
-
-
+	This program gives an example of how to create a basic detached thread. The benefit of a detached thread is that its resources are released immediately when the thread is terminated. With a non-detached thread, however, the resources are not released until pthread_join() is called or until the parent process is terminated.
