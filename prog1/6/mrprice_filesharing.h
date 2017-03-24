@@ -4,12 +4,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>
+#include <time.h>
 #include <unistd.h>
 
 
 // Globals
-// max file size -> 10MB
-const int SIZE = 10485760;
+
 // file name for shared memory object
 const char* SH_FILE = "mrprice_filesharing";
 
@@ -17,5 +17,7 @@ const char* SH_FILE = "mrprice_filesharing";
 struct filesharing_struct {
   bool flag;
   int size;
+  // max file size of 10MB
   char content[10485760];
+  char ftype[100];
 };
