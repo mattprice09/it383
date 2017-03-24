@@ -234,12 +234,15 @@ int main() {
         histCount++;
       } else {
         // view history
-        if (strcmp(inp, "history\n") == 0 || strcmp(inp, "!!\n") == 0) {
+        if (strcmp(inp, "history\n") == 0) {
           // all history
           for (int i = 0; i < histCount; i++) {
             printf(" %d  %s", i, history[i]);
           }
           continue;
+        } else if (strcmp(inp, "!!\n") == 0) {
+          // run most recent command
+          inp = history[histCount-1];
         } else {
           // run specific command from history
           int i;
@@ -257,6 +260,7 @@ int main() {
             if (histNum < histCount) {
               inp = history[histNum];
             }
+            free(digitStr);
           }
         }
       }
@@ -275,12 +279,8 @@ int main() {
       if (cmdStatus == 1) {
         return 1;
       }
-      for (int i = 0; i < numPipes+1; i++) {
-        free(cmds[i].tokens);
-      }
       free(cmds);
     }
-    free(inp);
     // if (controller >= 10) {
     //   return 1;
     // }
