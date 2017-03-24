@@ -2,17 +2,22 @@
 #include "mrprice_filesharing.h"
 
 
+// Generate filename for the downloaded file.
+// Format: "download_DD_MM_YY_hr_min_sec"
 char* createDownloadFName(struct filesharing_struct* download) {
   char* dlFileName = malloc(100 * sizeof(char));
   strcpy(dlFileName, "download_");
+  // get date and time as formatted strings
   char dateStr[100];
   char timeStr[100];
   time_t t = time(NULL);
   struct tm *tm = localtime(&t);
   strftime(dateStr, sizeof(dateStr), "%d_%m_%Y_", tm);
   strftime(timeStr, sizeof(timeStr), "%H.%M.%S", tm);
+  // append to file name
   strcat(dlFileName, dateStr);
   strcat(dlFileName, timeStr);
+  // add the file extension if there is any
   strcat(dlFileName, download->ftype);
   return dlFileName;
 }

@@ -1,0 +1,19 @@
+For the program 1 redo, I made significant improvements despite only losing a small portion of points on parts 5 and 6. 
+
+First off, I fixed all of compilation warnings by adding appropriate flags in makefiles. Previously, I had mistakenly done all testing on my Macbook Pro. This was a shortsight on my part to not test my programs in an actual Linux environment.
+
+Part 5 changes:
+	- Fixed !! command
+		- I had wrongly assumed that this command was just supposed to display the history. Now it runs the most recent command of the user.
+
+Part 6 changes:
+	- Can upload/download binary files now (and also many other file types)
+	- Keeps track of source file extensions (.bin, .java, .o, etc) in the upload, stores in struct, and appends the file extension to the download file name.
+	- Download file name is now "download_DATE_TIME", where DATE and TIME represent the date and time that the user downloded the file.
+	- Removed the SIZE global variable and used sizeof(struct filesharing_struct) instead.
+	- For uploading, reads the file's contents in chunks.
+	- Downloading uses fwrite() now instead of fprintf()
+	- Various other minor changes
+
+Unfixed:
+	- You noted that, for part 5, the command "ls -Rl / | more" froze. I didn't have time to implement a fix here, but the issue occurs only for commands that span multiple pages (where you must press Space to go to the next page or Q to exit). Pressing Q in these scenarios doesn't return the user to the shell. This is a fixable issue, it was just prioritized below the above changes.
