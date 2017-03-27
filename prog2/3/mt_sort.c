@@ -1,9 +1,6 @@
 #include "mt_sort.h"
 
 
-// Currently doesn't handle exceedingly large individual ints (overflow)
-
-
 // comparison function for quicksort
 int _comp(const void* a, const void* b) {
   return ( *(int*)a - *(int*)b);
@@ -22,32 +19,6 @@ void _printData(char* d) {
     }
   }
   printf("\n");
-}
-
-
-// Read integer array from file containing numbers which are guaranteed
-// to be separated by whitespace or newline characters.
-// 
-void readInputData(char* filename) {
-  // open file
-  FILE* file = fopen(filename, "r");
-  if (file == NULL) {
-    printf("Input file could not be opened.\n");
-    exit(1);
-  }
-
-  // read file number by number
-  size = 0;
-  data = malloc(size * sizeof(int));
-  int num;
-  while(fscanf(file, "%d", &num) == 1) {
-    // add new number
-    data = (int*) realloc(data, (size+1) * sizeof(int*));
-    data[size] = num;
-    size++;
-  }
-
-  fclose(file);
 }
 
 
@@ -94,6 +65,29 @@ void* quicksort(void* args) {
 }
 
 
+// Read integer array from file containing numbers which are guaranteed
+// to be separated by whitespace or newline characters.
+// 
+void readInputData(char* filename) {
+  // open file
+  FILE* file = fopen(filename, "r");
+  if (file == NULL) {
+    printf("Input file could not be opened.\n");
+    exit(1);
+  }
+  // read file number by number
+  size = 0;
+  data = malloc(size * sizeof(int));
+  int num;
+  while(fscanf(file, "%d", &num) == 1) {
+    // add new number
+    data = (int*) realloc(data, (size+1) * sizeof(int*));
+    data[size] = num;
+    size++;
+  }
+  fclose(file);
+}
+
 
 // Read the content from shared memory object, write to local file.
 int writeConcurrently(char* filename) {
@@ -112,6 +106,7 @@ int writeConcurrently(char* filename) {
       fprintf(file, "%d ", sorted[numWritten]);
       numWritten++;
     }
+    printf("waiting on a merge...");
   }
   fclose(file);
   return 0;

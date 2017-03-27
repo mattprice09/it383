@@ -1,0 +1,19 @@
+Part 3 of programming assignment 2 went pretty smoothly compared to the final parts of programming assignment 1. The concept and plan of attack was relatively straightforward given our experience thus far this semester. Ultimately, the most time-consuming factor boiled down to C being a new language for me.
+
+I took the intuitive starting point of reading in the data file. Here, I used fscanf() instead of strtok() simply because it was less lines of code. I wrote the readInputData() function using both strategies and saw no noticeable performance difference between the two.
+
+I began to write a custom quicksort algorithm until I discovered that C has a built-in quicksort function in qsort(). This saved me a good chunk of time!
+
+I took Dr. Suh's recommendation of using a global array to handle the data. This turned out to make things simpler in many aspects, especially when it allowed me to store the array size in a global variable instead of passing around a struct containing both the data and the array size.
+
+The threading portion involved creating two threads that each run quicksort on half of the array. Afterwards, a third thread was to sort the outcome of the quicksorts. Here, I simply had each of the quicksort threads operate on indeces of the data array and sort the array in-place. The only data duplication that was required was when I called the merge function (which was essentially the merge function from mergesort). 
+
+When I began the merging thread, I opted to not block the parent thread. This allowed me to write the data as it was merged instead of waiting for everything to be merged before writing. I thought this would increase the performance at least somewhat significantly, however I was surprised by my performance test results.
+
+I wrote a quick Python script to generate input data of variable sizes and used C's clock() function to calculate the time it took to merge/write. In one method, I performed my program without blocking (as described above). In another method, I blocked the merging thread until it completed, and THEN wrote the output. There was no difference in performance:
+
+n: 1000000, non-blocking: 0.118694 sec, blocking: 0.129441 sec
+n: 10000000, non-blocking: 1.215539 sec, blocking: 1.245961 sec
+n: 100000000, non-blocking: 13.860221 sec, blocking: 13.852096 sec
+
+Thinking about it further, my best guess as to why I saw no performance increase would be because this wasn't any kind of bottleneck in the program. All it is is two separate N loops where only one of them requires a kernel thread.
