@@ -1,95 +1,153 @@
 #include <pthread.h>
 #include <semaphore.h>
+#include <signal.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>
-#include <sys/types.h>
-#include <pthread.h>
+#include <time.h>
+#include <unistd.h>
 
 #include "buffer.h"
 
 
-/* the buffer */
+// data objects
+char** words;
+int numWords;
 buffer_item buffer[BUFFER_SIZE];
-mutex_t locks[BUFFER_SIZE];
-sem_t sem;
+
+// lock objects
+pthread_mutex_t stdout_mutex;
+sem_t empty;
+sem_t full;
+sem_t mutex;
+
+// counters
 int in;
 int out;
-int count;
 
-int insert_item(buffer_item item) {
-
-  sem_wait(&sem);
-  while (count == BUFFER_SIZE) {
-    // wait for consumer to clear room in buffer
-  }
-  mutex_lock(&locks[in]);
-  // critical section
-  buffer[in] = item;
-  // keep track of the correct mutex for when we unlock
-  int curr = in;
-  in = (in + 1) % BUFFER_SIZE;
-  count++;
-  // exit critical section
-  mutex_unlock(&locks[curr]);
-  sem_post(&sem);
-}
 
 /**
-* 1) Get semaphore
-* 2) Wait for producer to add item to buffer
-* 3) Acquire lock for the item
-* 4) Critical section
-* 5) Release mutex/semaphore
+* 1) Wait for lock to signal that there is available buffer space
+* 2) Get mutex to write
+* 3) Critical section
+* 4) Release internal mutex
+* 5) Signal that there is data to be read for consumer
+*/
+int insert_item(buffer_item item) {
+
+  // acquire locks
+  sem_wait(&empty);
+  sem_wait(&mutex);
+
+  // critical section
+  buffer[in] = malloc(strlen(item)*sizeof(buffer_item));
+  strcpy(buffer[in], item);
+  in = (in + 1) % BUFFER_SIZE;
+
+  // exit critical section
+  sem_post(&mutex);
+  sem_post(&full);
+}
+
+
+/**
+* 1) Wait for lock to signal that there is data to consumed
+* 2) Get mutex to read specific buffer slot
+* 3) Critical section
+* 4) Release internal mutex
+* 5) Signal that there is now available buffer space for producer
 */
 int remove_item(buffer_item *item) {
 
-  sem_wait(&sem);
-  while (count == 0) {
-    // wait for producer to write data
-  }
-  mutex_lock(&locks[out]);
+  // acquire locks
+  sem_wait(&full);
+  sem_wait(&mutex);
+  
   // critical section
-  buffer_item item = buffer[out];
-  count--;
-  // keep track of the correct mutex for when we unlock
-  int curr = out;
-  out = (out + 1) % BUFFER_SIZE;
-  // exit critical section
-  mutex_unlock(&locks[curr]);
-  sem_post(&sem);
+  *item = malloc(strlen(buffer[out])*sizeof(buffer_item));
+  strcpy(*item, buffer[out]);
+  if (item) {
+    out = (out + 1) % BUFFER_SIZE;
+  }
 
+  // exit critical section
+  sem_post(&mutex);
+  sem_post(&empty);
+
+  if (item != NULL) {
+    return 0;
+  } else {
+    return 1;
+  }
 }
 
 
+/**
+* Read/remove an item from the buffer
+*/
 void* consumer(void* args) {
-  
+  buffer_item item;
+
+  pthread_t tid = pthread_self();
+
+  int r = rand() % 10;
+  while (true) {
+    sleep(r);
+
+    // perform read
+    if (remove_item(&item) == 0) {
+      // write safely to stdout
+      pthread_mutex_lock(&stdout_mutex);
+      printf("[Consumer thread ID: %d] removed an item (word: %s) from the buffer\n", tid, item);
+      pthread_mutex_unlock(&stdout_mutex);
+    }
+    r = rand() % 10;
+  }
 }
 
 
 // initialize global variables
 void initialize() {
-  in = out = count = 0;
-  // initialize semaphore
-  sem_init(&sem, 0, BUFFER_SIZE);
-  // initialize mutex locks
-  for (int i = 0; i < BUFFER_SIZE; i++) {
-    mutex_init(&locks[i], USYNC_THREAD, NULL);
-    // buffer[i] = NULL;
-  }
+  in = out = 0;
+  // initialize lock objects
+  sem_init(&mutex, 0, 1);
+  sem_init(&empty, 0, BUFFER_SIZE);
+  sem_init(&full, 0, 0);
+  pthread_mutex_init(&stdout_mutex, NULL);
+  srand(time(NULL));
 }
 
 
+/**
+* Produce an item to the buffer
+*/
 void* producer(void* args) {
 
+  pthread_t tid = pthread_self();
+
+  int r = rand() % 10;
+  while (true) {
+    sleep(r);
+    r = rand() % (numWords-1);
+
+    // perform write
+    insert_item(words[r]);
+
+    // write safely to stdout
+    pthread_mutex_lock(&stdout_mutex);
+    printf("[Producer thread ID: %d] inserted an item (word: %s) to the buffer\n", tid, words[r]);
+    pthread_mutex_unlock(&stdout_mutex);
+    r = rand() % 10;
+  }
 }
 
 
 /**
 * Read input file that is expected to contain one word per line
 */
-char** readWords(char* filename) {
+void readWords(char* filename) {
   // open file
   FILE* file = fopen(filename, "r");
   if (file == NULL) {
@@ -97,28 +155,63 @@ char** readWords(char* filename) {
     exit(1);
   }
   // read file line by line (1 word per line)
-  int size = 0;
-  char** data = malloc(size * sizeof(char));
-  char* word = malloc(100 * sizeof(char));
+  numWords = 0;
+  words = (char**) malloc(numWords * sizeof(char*));
+  char word[100];
   while(fscanf(file, "%s", word) == 1) {
-    data = (char**) realloc(data, (size+1) * sizeof(char*));
-    data[size] = word;
-    size++;
+    words = (char**) realloc(words, (numWords+1) * sizeof(char*));
+    words[numWords] = malloc(strlen(word) * sizeof(char));
+    strcpy(words[numWords], word);
+    numWords++;
   }
   fclose(file);
-  return data;
 }
 
 
 int main(int argc, char *argv[]) {
 
+  // get user input
+  if (argc < 4) {
+    printf("> ERROR: Correct usage: `./producer_consumer MAX_TIME N_PRODUCERS N_CONSUMERS");
+    return 1;
+  }
+  int TIME_LIMIT = atoi(argv[1]);
+  int NUM_PRODUCERS = atoi(argv[2]);
+  int NUM_CONSUMERS = atoi(argv[3]);
+
   // read input from file
-  char** words = readWords("wordsEn.txt");
+  readWords("wordsEn.txt");
 
+  // initialize
   initialize();
+  pthread_t producers[NUM_PRODUCERS];
+  pthread_t consumers[NUM_CONSUMERS];
 
+  // create/run producer threads
+  for (int i = 0; i < NUM_PRODUCERS; i++) {
+    pthread_create(&producers[i], NULL, producer, NULL);
+  }
+  // create/run consumer threads
+  for (int i = 0; i < NUM_CONSUMERS; i++) {
+    pthread_create(&consumers[i], NULL, consumer, NULL);
+  }
 
+  // wait, let program run for the specified time
+  sleep(TIME_LIMIT);
 
-  sem_destroy(&sem);
+  // signal end producer threads
+  for (int i = 0; i < NUM_PRODUCERS; i++) {
+    pthread_cancel(producers[i]);
+  }
+  // signal end consumer threads
+  for (int i = 0; i < NUM_CONSUMERS; i++) {
+    pthread_cancel(consumers[i]);
+  }
+
+  // clean up mutexes/semaphores
+  sem_destroy(&mutex);
+  sem_destroy(&full);
+  sem_destroy(&empty);
+  pthread_mutex_destroy(&stdout_mutex);
 
 }
