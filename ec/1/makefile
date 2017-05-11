@@ -3,4 +3,4 @@ cc=gcc
 all: dirSearchList
 
 dirSearchList: dirSearchList.c
-	${cc} -pthread dirSearchList.c -o dirSearchList
+	${cc} dirSearchList.c -o dirSearchList

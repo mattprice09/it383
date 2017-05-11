@@ -4,23 +4,27 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
 #include <unistd.h>
 
 
+// Join a directory name with a file name, separated by a "/"
 char* get_abs_path(char* dir, char* fname) {
 
   // size of full path (+1 extra for extra slash)
-  int n = 1 + strlen(dir) + strlen(fname);
+  int n = strlen("/") + strlen(dir) + strlen(fname) + 1;
   // build the string
   char* abs = malloc(n * sizeof(char));
-  strncat(abs, dir, n);
-  strncat(abs, "/", n);
-  strncat(abs, fname, n);
+  strcpy(abs, dir);
+  strcat(abs, "/");
+  strcat(abs, fname);
 
   return abs;
 }
 
 
+// Get args to be used for execvp call.
+// Format: ["ls", "-l", <<path>>, NULL]
 char** get_ls_args(char* path) {
 
   // size of full array
@@ -29,19 +33,20 @@ char** get_ls_args(char* path) {
   char** args = malloc(n * sizeof(char*));
 
   // allocate memory for the 3 strings in the array
-  args[0] = malloc(2 * sizeof(char));
-  args[1] = malloc(2 * sizeof(char));
+  args[0] = malloc(strlen("ls") * sizeof(char));
+  args[1] = malloc(strlen("ls") * sizeof(char));
   args[2] = malloc(strlen(path) * sizeof(char));
   // copy the strings into the array
   strcpy(args[0], "ls");
   strcpy(args[1], "-l");
   strcpy(args[2], path);
+  args[3] = NULL;
 
   return args;
 }
 
 
-// checks if a string filepath is a directory
+// Checks if a string filepath is a directory
 int is_directory(const char *path) {
   struct stat statbuf;
   if (stat(path, &statbuf) != 0)
@@ -50,8 +55,10 @@ int is_directory(const char *path) {
 }
 
 
-// runs `ls -l <<path>>` in a child process
-int print_ls_output(char *path) {
+// Runs `ls -l <<path>>` in a child process
+int print_ls_output(char* path) {
+
+  char** ls_args = get_ls_args(path);
 
   pid_t pid;
   pid = fork();
@@ -60,12 +67,14 @@ int print_ls_output(char *path) {
     return 1;
   } else if (pid == 0) {
     // child process
-    execvp("ls", get_ls_args(path));
+    execvp("ls", ls_args);
     return 1;
   } else {
     // parent process
     wait(NULL);
   }
+
+  free(ls_args);
   return 0;
 }
 
@@ -93,6 +102,7 @@ int search_dir(char* cwd, char* target) {
       // get full path name of current file
       char* fpath = get_abs_path(cwd, dobj->d_name);
 
+      // printf("Checking %s...\n", fpath);
       if (is_directory(fpath) == 1) {
         // directory, make recursive call
         if (search_dir(fpath, target) == 1) {
@@ -106,6 +116,7 @@ int search_dir(char* cwd, char* target) {
           found = 1;
         }
       }
+      free(fpath);
     }
     closedir(d);
   }
